@@ -1,0 +1,521 @@
+DIGITAL ELECTRONICS & LOGIC DESIGN LAB VERILOG EXAM MASTER FILE
+=================================
+
+IMPORTANT
+
+This is a broad exam-preparation collection based on the topics
+discussed: SOP/POS, multiplexers, demultiplexers, binary/Gray
+conversion, flip-flops, and synchronous counters. It also includes
+common supporting lab programs.
+
+Each design is written as synthesizable Verilog-2001. Testbenches are
+included for the main designs. Save the required module and its
+testbench in a .v file (or copy only the required sections into a .v
+file).
+
+WSL / IVERILOG COMMANDS
+
+Compile: iverilog -o output design.v Run: vvp output Open waveform (if
+the testbench creates a VCD file): gtkwave waveform.vcd
+
+IMPORTANT: Use the exact same output filename in the compile and run
+commands. Example: iverilog -o outsop sop.v vvp outsop NOT: vvp outstop
+
+A testbench is a simulation-only module. It normally has no input/output
+ports. The design module is instantiated inside it. In a testbench, use
+reg for signals driven by the testbench and wire for outputs driven by
+the design.
+
+============================================================ 1. BASIC
+LOGIC GATES ============================================================
+
+module basic_gates(input a, b, output and_y, or_y, not_a, nand_y, nor_y,
+xor_y, xnor_y); assign and_y = a & b; assign or_y = a | b; assign not_a
+= ~a; assign nand_y = ~(a & b); assign nor_y = ~(a | b); assign xor_y =
+a ^ b; assign xnor_y = ~(a ^ b); endmodule
+
+Testbench: module basic_gates_tb; reg a, b; wire and_y, or_y, not_a,
+nand_y, nor_y, xor_y, xnor_y; basic_gates uut(a, b, and_y, or_y, not_a,
+nand_y, nor_y, xor_y, xnor_y); initial begin
+$dumpfile(“basic_gates.vcd”); $dumpvars(0, basic_gates_tb); a=0; b=0;
+#10; a=0; b=1; #10; a=1; b=0; #10; a=1; b=1; #10; $finish; end endmodule
+
+============================================================ 2. HALF
+ADDER ============================================================
+
+module half_adder(input a, b, output sum, carry); assign sum = a ^ b;
+assign carry = a & b; endmodule
+
+Testbench: module half_adder_tb; reg a, b; wire sum, carry; half_adder
+uut(a, b, sum, carry); initial begin $dumpfile(“half_adder.vcd”);
+$dumpvars(0, half_adder_tb); a=0; b=0; #10; a=0; b=1; #10; a=1; b=0;
+#10; a=1; b=1; #10; $finish; end endmodule
+
+============================================================ 3. FULL
+ADDER ============================================================
+
+module full_adder(input a, b, cin, output sum, cout); assign sum = a ^ b
+^ cin; assign cout = (a & b) | (b & cin) | (a & cin); endmodule
+
+Testbench: module full_adder_tb; reg a, b, cin; wire sum, cout;
+full_adder uut(a, b, cin, sum, cout); integer i; initial begin
+$dumpfile(“full_adder.vcd”); $dumpvars(0, full_adder_tb); for (i=0; i<8;
+i=i+1) begin {a,b,cin}=i; #10; end $finish; end endmodule
+
+============================================================ 4. HALF
+SUBTRACTOR ============================================================
+
+module half_subtractor(input a, b, output diff, borrow); assign diff = a
+^ b; assign borrow = (~a) & b; endmodule
+
+============================================================ 5. FULL
+SUBTRACTOR ============================================================
+
+module full_subtractor(input a, b, bin, output diff, bout); assign diff
+= a ^ b ^ bin; assign bout = ((~a) & b) | ((~(a ^ b)) & bin); endmodule
+
+============================================================ 6. 2:1
+MULTIPLEXER ============================================================
+
+module mux2to1(input a, b, sel, output y); assign y = sel ? b : a;
+endmodule
+
+Testbench: module mux2to1_tb; reg a, b, sel; wire y; mux2to1 uut(a, b,
+sel, y); initial begin $dumpfile(“mux2to1.vcd”); $dumpvars(0,
+mux2to1_tb); a=0; b=1; sel=0; #10; sel=1; #10; a=1; b=0; sel=0; #10;
+sel=1; #10; $finish; end endmodule
+
+============================================================ 7. 4:1
+MULTIPLEXER ============================================================
+
+module mux4to1(input [3:0] d, input [1:0] sel, output reg y); always
+@(*) begin case(sel) 2’b00: y=d[0]; 2’b01: y=d[1]; 2’b10: y=d[2]; 2’b11:
+y=d[3]; default: y=1’b0; endcase end endmodule
+
+Testbench: module mux4to1_tb; reg [3:0] d; reg [1:0] sel; wire y;
+mux4to1 uut(d, sel, y); integer i; initial begin
+$dumpfile(“mux4to1.vcd”); $dumpvars(0, mux4to1_tb); d=4’b1010; for(i=0;
+i<4; i=i+1) begin sel=i; #10; end $finish; end endmodule
+
+============================================================ 8. 8:1
+MULTIPLEXER ============================================================
+
+module mux8to1(input [7:0] d, input [2:0] sel, output reg y); always
+@(*) begin case(sel) 3’b000: y=d[0]; 3’b001: y=d[1]; 3’b010: y=d[2];
+3’b011: y=d[3]; 3’b100: y=d[4]; 3’b101: y=d[5]; 3’b110: y=d[6]; 3’b111:
+y=d[7]; default: y=1’b0; endcase end endmodule
+
+============================================================ 9. 1:2
+DEMULTIPLEXER
+============================================================
+
+module demux1to2(input din, sel, output reg y0, y1); always @(*) begin
+y0=0; y1=0; if(sel==0) y0=din; else y1=din; end endmodule
+
+============================================================ 10. 1:4
+DEMULTIPLEXER
+============================================================
+
+module demux1to4(input din, input [1:0] sel, output reg [3:0] y); always
+@(*) begin y=4’b0000; case(sel) 2’b00: y[0]=din; 2’b01: y[1]=din; 2’b10:
+y[2]=din; 2’b11: y[3]=din; default: y=4’b0000; endcase end endmodule
+
+Testbench: module demux1to4_tb; reg din; reg [1:0] sel; wire [3:0] y;
+demux1to4 uut(din, sel, y); integer i; initial begin
+$dumpfile(“demux1to4.vcd”); $dumpvars(0, demux1to4_tb); din=1; for(i=0;
+i<4; i=i+1) begin sel=i; #10; end din=0; sel=2’b00; #10; $finish; end
+endmodule
+
+============================================================ 11. 2-TO-4
+DECODER ============================================================
+
+module decoder2to4(input [1:0] a, input en, output reg [3:0] y); always
+@(*) begin y=4’b0000; if(en) begin case(a) 2’b00: y=4’b0001; 2’b01:
+y=4’b0010; 2’b10: y=4’b0100; 2’b11: y=4’b1000; endcase end end endmodule
+
+============================================================ 12. 4-TO-2
+ENCODER ============================================================
+
+module encoder4to2(input [3:0] d, output reg [1:0] y); always @(*) begin
+case(d) 4’b0001: y=2’b00; 4’b0010: y=2’b01; 4’b0100: y=2’b10; 4’b1000:
+y=2’b11; default: y=2’bxx; endcase end endmodule
+
+============================================================ 13. 4-TO-2
+PRIORITY ENCODER
+============================================================
+
+module priority_encoder4to2(input [3:0] d, output reg [1:0] y, output
+reg valid); always @(*) begin valid=1’b1; if(d[3]) y=2’b11; else
+if(d[2]) y=2’b10; else if(d[1]) y=2’b01; else if(d[0]) y=2’b00; else
+begin y=2’b00; valid=1’b0; end end endmodule
+
+============================================================ 14. 3-BIT
+BINARY TO GRAY CODE CONVERTER
+============================================================
+
+module binary_to_gray(input [2:0] bin, output [2:0] gray); assign
+gray[2]=bin[2]; assign gray[1]=bin[2]^bin[1]; assign
+gray[0]=bin[1]^bin[0]; endmodule
+
+Testbench: module binary_to_gray_tb; reg [2:0] bin; wire [2:0] gray;
+binary_to_gray uut(bin, gray); integer i; initial begin
+$dumpfile(“binary_to_gray.vcd”); $dumpvars(0, binary_to_gray_tb);
+for(i=0; i<8; i=i+1) begin bin=i; #10; $display(“Binary=%b Gray=%b”,
+bin, gray); end $finish; end endmodule
+
+============================================================ 15. 3-BIT
+GRAY TO BINARY CONVERTER
+============================================================
+
+module gray_to_binary(input [2:0] gray, output [2:0] bin); assign
+bin[2]=gray[2]; assign bin[1]=bin[2]^gray[1]; assign
+bin[0]=bin[1]^gray[0]; endmodule
+
+Testbench: module gray_to_binary_tb; reg [2:0] gray; wire [2:0] bin;
+gray_to_binary uut(gray, bin); integer i; initial begin
+$dumpfile(“gray_to_binary.vcd”); $dumpvars(0, gray_to_binary_tb);
+for(i=0; i<8; i=i+1) begin gray=i; #10; $display(“Gray=%b Binary=%b”,
+gray, bin); end $finish; end endmodule
+
+============================================================ 16. SOP
+FUNCTION USING DATAFLOW MODEL
+============================================================
+
+Example: F(A,B,C) = B’C + AB
+
+module sop(input a,b,c, output y); assign y=(~b & c) | (a & b);
+endmodule
+
+Testbench: module sop_tb; reg a,b,c; wire y; sop uut(a,b,c,y); integer
+i; initial begin $dumpfile(“sop.vcd”); $dumpvars(0, sop_tb); for(i=0;
+i<8; i=i+1) begin {a,b,c}=i; #10; $display(“A=%b B=%b C=%b
+Y=%b”,a,b,c,y); end $finish; end endmodule
+
+NOTE: For another SOP question, simplify the given minterms using a
+K-map first, then replace the right-hand side of the assign statement
+with the simplified Boolean expression. Do not assume every SOP question
+has the same expression.
+
+============================================================ 17. SOP
+FUNCTION USING BEHAVIORAL MODEL
+============================================================
+
+module sop_behavioral(input a,b,c, output reg y); always @(*) begin
+y=(~b & c) | (a & b); end endmodule
+
+============================================================ 18. POS
+FUNCTION USING DATAFLOW MODEL
+============================================================
+
+Example: F(A,B,C) = (A+B)(B’+C)
+
+module pos(input a,b,c, output y); assign y=(a | b) & ((~b) | c);
+endmodule
+
+============================================================ 19. POS
+FUNCTION USING BEHAVIORAL MODEL
+============================================================
+
+module pos_behavioral(input a,b,c, output reg y); always @(*) begin y=(a
+| b) & ((~b) | c); end endmodule
+
+============================================================ 20. 1-BIT
+COMPARATOR ============================================================
+
+module comparator1bit(input a,b, output equal, greater, less); assign
+equal=~(a^b); assign greater=a&(~b); assign less=(~a)&b; endmodule
+
+============================================================ 21. 2-BIT
+COMPARATOR ============================================================
+
+module comparator2bit(input [1:0] a,b, output equal, greater, less);
+assign equal=(a==b); assign greater=(a>b); assign less=(a<b); endmodule
+
+============================================================ 22. EVEN /
+ODD PARITY GENERATOR
+============================================================
+
+module parity_generator(input [3:0] d, output even_parity, odd_parity);
+assign even_parity=^d; assign odd_parity=~(^d); endmodule
+
+============================================================ 23. SR
+LATCH (GATED, ACTIVE-HIGH)
+============================================================
+
+module sr_latch(input s,r, output reg q, output qbar); always @(*) begin
+if(s && !r) q=1’b1; else if(!s && r) q=1’b0; else if(!s && !r) q=q; else
+q=1’bx; // forbidden condition S=R=1 end assign qbar=~q; endmodule
+
+============================================================ 24. D LATCH
+============================================================
+
+module d_latch(input d,en, output reg q); always @(*) begin if(en) q=d;
+end endmodule
+
+============================================================ 25. D
+FLIP-FLOP (POSITIVE EDGE)
+============================================================
+
+module d_ff(input clk,d, output reg q); always @(posedge clk) begin
+q<=d; end endmodule
+
+Testbench: module d_ff_tb; reg clk,d; wire q; d_ff uut(clk,d,q); always
+#5 clk=~clk; initial begin $dumpfile(“d_ff.vcd”); $dumpvars(0,d_ff_tb);
+clk=0; d=0; #10; d=1; #10; d=0; #10; d=1; #10; $finish; end endmodule
+
+============================================================ 26. D
+FLIP-FLOP WITH ASYNCHRONOUS RESET
+============================================================
+
+module d_ff_reset(input clk, reset, d, output reg q); always @(posedge
+clk or posedge reset) begin if(reset) q<=1’b0; else q<=d; end endmodule
+
+============================================================ 27. JK
+FLIP-FLOP ============================================================
+
+module jk_ff(input clk,j,k, output reg q); always @(posedge clk) begin
+case({j,k}) 2’b00: q<=q; 2’b01: q<=1’b0; 2’b10: q<=1’b1; 2’b11: q<=~q;
+endcase end endmodule
+
+============================================================ 28. T
+FLIP-FLOP ============================================================
+
+module t_ff(input clk,t, output reg q); always @(posedge clk) begin
+if(t) q<=~q; else q<=q; end endmodule
+
+============================================================ 29. 3-BIT
+ASYNCHRONOUS UP COUNTER
+============================================================
+
+module async_up_counter(input clk, reset, output reg [2:0] q); always
+@(posedge clk or posedge reset) begin if(reset) q<=3’b000; else
+q<=q+1’b1; end endmodule
+
+============================================================ 30. 3-BIT
+ASYNCHRONOUS DOWN COUNTER
+============================================================
+
+module async_down_counter(input clk, reset, output reg [2:0] q); always
+@(posedge clk or posedge reset) begin if(reset) q<=3’b111; else
+q<=q-1’b1; end endmodule
+
+============================================================ 31. 3-BIT
+SYNCHRONOUS UP COUNTER
+============================================================
+
+module sync_up_counter(input clk, reset, output reg [2:0] q); always
+@(posedge clk) begin if(reset) q<=3’b000; else q<=q+1’b1; end endmodule
+
+============================================================ 32. 3-BIT
+SYNCHRONOUS DOWN COUNTER
+============================================================
+
+module sync_down_counter(input clk, reset, output reg [2:0] q); always
+@(posedge clk) begin if(reset) q<=3’b111; else q<=q-1’b1; end endmodule
+
+Testbench for synchronous down counter: module sync_down_counter_tb; reg
+clk,reset; wire [2:0] q; sync_down_counter uut(clk,reset,q); always #5
+clk=~clk; initial begin $dumpfile(“sync_down_counter.vcd”);
+$dumpvars(0,sync_down_counter_tb); clk=0; reset=1; #10; reset=0;
+repeat(10) #10; $finish; end endmodule
+
+============================================================ 33. 3-BIT
+SYNCHRONOUS UP/DOWN COUNTER
+============================================================
+
+module sync_up_down_counter(input clk, reset, up, output reg [2:0] q);
+always @(posedge clk) begin if(reset) q<=3’b000; else if(up) q<=q+1’b1;
+else q<=q-1’b1; end endmodule
+
+============================================================ 34. MOD-10
+(DECADE) COUNTER
+============================================================
+
+module mod10_counter(input clk, reset, output reg [3:0] q); always
+@(posedge clk) begin if(reset) q<=4’d0; else if(q==4’d9) q<=4’d0; else
+q<=q+1’b1; end endmodule
+
+============================================================ 35. 4-BIT
+RING COUNTER
+============================================================
+
+module ring_counter(input clk, reset, output reg [3:0] q); always
+@(posedge clk) begin if(reset) q<=4’b0001; else q<={q[2:0],q[3]}; end
+endmodule
+
+============================================================ 36. 4-BIT
+JOHNSON COUNTER
+============================================================
+
+module johnson_counter(input clk, reset, output reg [3:0] q); always
+@(posedge clk) begin if(reset) q<=4’b0000; else q<={q[2:0],~q[3]}; end
+endmodule
+
+============================================================ 37. 4-BIT
+SHIFT REGISTER (SISO)
+============================================================
+
+module siso_shift_register(input clk, reset, serial_in, output reg
+serial_out); reg [3:0] q; always @(posedge clk) begin if(reset)
+q<=4’b0000; else q<={q[2:0],serial_in}; end always @(*) serial_out=q[3];
+endmodule
+
+============================================================ 38. 4-BIT
+SHIFT REGISTER (SIPO)
+============================================================
+
+module sipo_shift_register(input clk, reset, serial_in, output reg [3:0]
+parallel_out); always @(posedge clk) begin if(reset)
+parallel_out<=4’b0000; else parallel_out<={parallel_out[2:0],serial_in};
+end endmodule
+
+============================================================ 39. 4-BIT
+SHIFT REGISTER (PIPO)
+============================================================
+
+module pipo_register(input clk, reset, input [3:0] parallel_in, output
+reg [3:0] parallel_out); always @(posedge clk) begin if(reset)
+parallel_out<=4’b0000; else parallel_out<=parallel_in; end endmodule
+
+============================================================ 40. 4-BIT
+SHIFT REGISTER (PISO)
+============================================================
+
+module piso_shift_register(input clk, reset, load, input [3:0]
+parallel_in, output serial_out); reg [3:0] q; always @(posedge clk)
+begin if(reset) q<=4’b0000; else if(load) q<=parallel_in; else
+q<={q[2:0],1’b0}; end assign serial_out=q[3]; endmodule
+
+============================================================ 41. 4-BIT
+UNIVERSAL SHIFT REGISTER
+============================================================
+
+module universal_shift_register(input clk, reset, input [1:0] mode,
+input serial_left, serial_right, input [3:0] parallel_in, output reg
+[3:0] q); always @(posedge clk) begin if(reset) q<=4’b0000; else begin
+case(mode) 2’b00: q<=q; // hold 2’b01: q<={serial_right,q[3:1]}; //
+shift right 2’b10: q<={q[2:0],serial_left}; // shift left 2’b11:
+q<=parallel_in; // parallel load endcase end end endmodule
+
+============================================================ 42. 4-BIT
+BINARY UP COUNTER WITH ENABLE
+============================================================
+
+module counter_enable(input clk, reset, enable, output reg [3:0] q);
+always @(posedge clk) begin if(reset) q<=4’b0000; else if(enable)
+q<=q+1’b1; end endmodule
+
+============================================================ 43. 4-BIT
+REGISTER WITH LOAD AND RESET
+============================================================
+
+module register4(input clk, reset, load, input [3:0] d, output reg [3:0]
+q); always @(posedge clk) begin if(reset) q<=4’b0000; else if(load)
+q<=d; end endmodule
+
+============================================================ 44. COMMON
+TESTBENCH TEMPLATE
+============================================================
+
+module design_tb; reg a,b; wire y;
+
+    // Replace design_name and port connections with your design.
+    design_name uut(a,b,y);
+
+    initial begin
+        $dumpfile("design.vcd");
+        $dumpvars(0,design_tb);
+
+        a=0; b=0; #10;
+        a=0; b=1; #10;
+        a=1; b=0; #10;
+        a=1; b=1; #10;
+
+        $finish;
+    end
+
+endmodule
+
+For a clock: always #5 clk=~clk;
+
+For a loop over all 3-bit input combinations: integer i; for(i=0; i<8;
+i=i+1) begin {a,b,c}=i; #10; end
+
+============================================================ 45.
+IMPORTANT VERILOG RULES FOR THE EXAM
+============================================================
+
+1.  Use ‘assign’ for continuous/dataflow assignments. Example: assign
+    y=(a & b) | c;
+
+2.  Use ’always @()’ for combinational behavioral logic. Outputs
+    assigned inside this block must be declared reg in Verilog-2001.
+    Example: output reg y; always @() begin if(sel) y=b; else y=a; end
+
+3.  Use ‘always @(posedge clk)’ for positive-edge-triggered sequential
+    logic. Use nonblocking assignments (<=) for flip-flops and counters.
+
+4.  Use ‘always @(posedge clk or posedge reset)’ for an asynchronous
+    active-high reset.
+
+5.  Use blocking assignments (=) in combinational always blocks. Use
+    nonblocking assignments (<=) in clocked sequential always blocks.
+
+6.  In a combinational always block, assign every output in every
+    possible branch. Give a default value before a case statement to
+    avoid latches.
+
+7.  Verilog operators: AND & OR | NOT ~ XOR ^ XNOR ~^ or ^ Equality ==
+    Greater > Less < Ternary condition ? true_value : false_value
+
+8.  Bit widths: reg a; // one bit reg [2:0] a; // three bits 3’b101 //
+    3-bit binary value 4’d9 // 4-bit decimal value 8’hA5 // 8-bit
+    hexadecimal value
+
+9.  Module instantiation: module_name instance_name(port1, port2,
+    output1);
+
+    Safer named-port style: module_name uut(.a(a), .b(b), .y(y));
+
+10. A common testbench structure: reg inputs; wire outputs; design
+    uut(…); initial begin $dumpfile(“file.vcd”);
+    $dumpvars(0,testbench_name); // apply inputs with delays #10;
+    $finish; end
+
+11. If Icarus says ‘Unable to open input file’, check that the filename
+    after vvp exactly matches the -o filename from iverilog.
+
+12. If GTKWave says the VCD file is missing, check that:
+
+    -   $dumpfile(“name.vcd”) is present
+    -   $dumpvars(0,testbench_name) is present
+    -   the simulation ran successfully
+    -   you are in the correct directory
+
+============================================================ 46. WHAT TO
+PRIORITIZE FOR YOUR LAB EXAM
+============================================================
+
+VERY HIGH PRIORITY (based on the questions you mentioned): [ ] SOP
+function - K-map, expression, Verilog, simulation [ ] POS function -
+K-map, expression, Verilog, simulation [ ] 1:4 demultiplexer [ ] 4:1
+multiplexer [ ] Binary to Gray code converter (3-bit) [ ] Gray to Binary
+code converter (3-bit) [ ] D flip-flop [ ] 3-bit synchronous down
+counter
+
+ALSO PRACTISE: [ ] Basic logic gates [ ] Half adder and full adder [ ]
+Half subtractor and full subtractor [ ] 2:1 mux and 8:1 mux [ ] 1:2
+demux [ ] 2:4 decoder and 4:2 encoder [ ] JK and T flip-flops [ ] Up
+counter and up/down counter [ ] Mod-10 counter [ ] Shift registers
+
+FINAL EXAM CHECKLIST
+
+[ ] I can write module declaration correctly. [ ] I know when to use
+assign and always. [ ] I know reg versus wire. [ ] I can write a
+testbench with reg, wire, initial, delay and $finish. [ ] I can generate
+a clock using always #5 clk=~clk. [ ] I can compile with iverilog. [ ] I
+can run with vvp using the correct output filename. [ ] I can open the
+VCD file in GTKWave. [ ] I can explain the truth table and Boolean
+expression.
+
+END OF MASTER FILE
